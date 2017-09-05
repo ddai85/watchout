@@ -51,18 +51,30 @@ var render = function(enemy_data) {
 	    .attr('cx', function(d) {var obj = moveAround(); return obj.x})
 	    .attr('cy', function(d) {var obj = moveAround(); return obj.y})
   }, 1000);
+
+  var player = gameBoard.selectAll('player').data([1]);
+
+  var drag = d3.behavior.drag()
+    .on("drag", dragmove);
+
+  var width = gameOptions.width,
+  height = gameOptions.height,
+  radius = 10;
+
+  function dragmove(d) {
+    d3.select(this)
+      .attr("cx", d.x = d3.event.x)
+      .attr("cy", d.y = d3.event.y);
+  }
+
+  player.enter()
+    .append('svg:circle')
+    .attr('class', 'player')
+    .attr('cx', gameOptions.width / 2)
+    .attr('cy', gameOptions.height / 2)
+    .attr('r', 10)
+    .attr('fill', 'red')
+    .call(drag)
 }
 
 render(enemy_data);
-
-
-
-// setInterval(function(){
-// 	newEnemyData = findEnemyPos();
-// 	render(newEnemyData);
-// }, 1000)
-
-// var play = function() {
-  
-
-// }
