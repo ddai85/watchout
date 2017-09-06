@@ -6,10 +6,30 @@ var gameOptions = {
   padding: 20
 }
 
+var gameStats = {
+  score: 0,
+  bestScore: 0,
+  collisions: 0
+}
+
+var playerStats = {
+  x: gameOptions.width / 2,
+  y: gameOptions.height / 2,
+  r: 10
+}
+
+var updateScore = function() {
+  d3.select('.current')
+  .text('Current score: ' + gameStats.score.toString())
+
+  d3.select('.collisions')
+  .text('Collisions: ' + gameStats.collisions.toString())
+}
 
 var gameBoard = d3.select('.board').append('svg:svg')
-                .attr('width', gameOptions.width)
-                .attr('height', gameOptions.height)
+  .attr('width', gameOptions.width)
+  .attr('height', gameOptions.height)
+  .attr('class', 'gameSpace')
 
 
 var findEnemyPos = function(){
@@ -23,6 +43,7 @@ var findEnemyPos = function(){
 }
 
 var enemy_data = findEnemyPos();
+var enemies = gameBoard.selectAll('enemy').data(enemy_data, function(d){return d.id});
 
 var moveAround = function() {
 	var obj = {}
@@ -34,7 +55,7 @@ var moveAround = function() {
 }
 
 var render = function(enemy_data) {
-	var enemies = gameBoard.selectAll('enemy').data(enemy_data, function(d){return d.id});
+	
 
 	enemies.enter()
 		.append('svg:circle')
@@ -44,13 +65,18 @@ var render = function(enemy_data) {
 		.attr('r', 10)
 		.attr('fill', 'purple')
 
-  setInterval(function(){
-	  enemies
+  var move = function(element){
+	  element
 	    .transition()
-	    .duration(1000)
+	    .duration(2000)
 	    .attr('cx', function(d) {var obj = moveAround(); return obj.x})
 	    .attr('cy', function(d) {var obj = moveAround(); return obj.y})
-  }, 1000);
+	    .each('end', function(){
+	      move(d3.select(this));
+	    })
+	    gameStats.score += 1;
+  }
+  move(enemies)
 
   var player = gameBoard.selectAll('player').data([1]);
 
@@ -63,8 +89,8 @@ var render = function(enemy_data) {
 
   function dragmove(d) {
     d3.select(this)
-      .attr("cx", d.x = d3.event.x)
-      .attr("cy", d.y = d3.event.y);
+      .attr("cx", function(d){ playerStats.x = d3.event.x; return d.x = d3.event.x })
+      .attr("cy", function(d){ playerStats.y = d3.event.y; return d.y = d3.event.y });
   }
 
   player.enter()
@@ -76,5 +102,31 @@ var render = function(enemy_data) {
     .attr('fill', 'red')
     .call(drag)
 }
+
+var prevCollision = false;
+
+var checkCollision = function() {
+	var collision = false;
+
+	enemies.each(function(){
+		var radiusSum =  20
+		var xDiff = this.attr('cx') - playerStats.x;
+		var yDiff = this.attr('cy') - playerStats.y;
+		var separation = Math.sqrt( Math.pow(xDiff,2) + Math.pow(yDiff,2) )
+		if (separation < radiusSum) {
+			collision = true;
+		}
+  })
+
+  if (collision) {
+  	gameStats.score = 0;
+  	if (prevCollision != collision) {
+  		gameStats.collisions += 1;
+  	}
+  }
+}
+
+d3.timer(checkCollision)
+d3.timer(updateScore)
 
 render(enemy_data);
